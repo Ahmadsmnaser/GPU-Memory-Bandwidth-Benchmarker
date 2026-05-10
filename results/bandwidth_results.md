@@ -7,11 +7,11 @@ This file documents the current benchmark results for the CUDA memory bandwidth 
 Date: 2026-05-10  
 GPU: NVIDIA GeForce MX250  
 Reported global memory: 1.99988 GB  
-Kernels: sequential copy, strided copy, offset copy, reverse copy, shared tiled copy, shared conflict copy  
+Kernels: sequential copy, strided copy, offset copy, reverse copy, shared tiled copy, shared conflict copy, shared no-coalescing copy  
 Block size: 256  
 Iterations: 100
 
-The benchmark currently measures six kernels:
+The benchmark currently measures seven kernels:
 
 ```cpp
 output[idx] = input[idx];
@@ -51,6 +51,14 @@ __syncthreads();
 output[idx] = shared[shared_index];
 ```
 
+and
+
+```cpp
+shared[tid] = input[idx];
+__syncthreads();
+output[idx] = shared[(tid * shared_stride) % blockDim.x];
+```
+
 For each output element, the kernel performs:
 
 - one global memory read
@@ -68,11 +76,11 @@ where `time` is the average kernel execution time.
 
 | Size (MB) | Avg Time (ms) | Bandwidth (GB/s) |
 | --- | ---: | ---: |
-| 10 | 0.429988 | 48.7724 |
-| 32 | 1.36429 | 49.1898 |
-| 64 | 2.72494 | 49.2554 |
-| 128 | 5.44632 | 49.2875 |
-| 256 | 10.89080 | 49.2959 |
+| 10 | 0.429138 | 48.8690 |
+| 32 | 1.36394 | 49.2023 |
+| 64 | 2.72516 | 49.2513 |
+| 128 | 5.44525 | 49.2971 |
+| 256 | 10.89030 | 49.2981 |
 
 ## Strided Results
 
@@ -80,11 +88,11 @@ Test size: `32 MB`
 
 | Pattern | Param | Avg Time (ms) | Bandwidth (GB/s) |
 | --- | ---: | ---: | ---: |
-| Strided | 2 | 2.01984 | 33.2248 |
-| Strided | 4 | 3.34000 | 20.0925 |
-| Strided | 8 | 6.03652 | 11.1171 |
-| Strided | 16 | 6.04865 | 11.0949 |
-| Strided | 32 | 6.07426 | 11.0481 |
+| Strided | 2 | 2.02004 | 33.2215 |
+| Strided | 4 | 3.33984 | 20.0935 |
+| Strided | 8 | 6.03685 | 11.1165 |
+| Strided | 16 | 6.04873 | 11.0947 |
+| Strided | 32 | 6.07329 | 11.0498 |
 
 ## Offset Access
 
@@ -92,11 +100,11 @@ Test size: `32 MB`
 
 | Pattern | Param | Avg Time (ms) | Bandwidth (GB/s) |
 | --- | ---: | ---: | ---: |
-| Offset | 2 | 1.36826 | 49.0469 |
-| Offset | 4 | 1.36901 | 49.0201 |
-| Offset | 8 | 1.37020 | 48.9773 |
-| Offset | 16 | 1.36741 | 49.0774 |
-| Offset | 32 | 1.36553 | 49.1448 |
+| Offset | 2 | 1.36864 | 49.0333 |
+| Offset | 4 | 1.36867 | 49.0322 |
+| Offset | 8 | 1.37054 | 48.9652 |
+| Offset | 16 | 1.36731 | 49.0811 |
+| Offset | 32 | 1.36659 | 49.1068 |
 
 ## Reverse Access
 
@@ -104,7 +112,7 @@ Test size: `32 MB`
 
 | Pattern | Parameter | Avg Time (ms) | Bandwidth (GB/s) |
 | --- | ---: | ---: | ---: |
-| Reverse | 1 | 1.36418 | 49.1934 |
+| Reverse | 1 | 1.36451 | 49.1816 |
 
 ### Observation
 
@@ -117,12 +125,12 @@ Test size: `32 MB`
 
 | Pattern | Parameter | Avg Time (ms) | Bandwidth (GB/s) |
 | --- | ---: | ---: | ---: |
-| SharedTile | 32 | 2.54595 | 26.3591 |
-| SharedTile | 64 | 1.39067 | 48.2564 |
-| SharedTile | 128 | 1.38473 | 48.4633 |
-| SharedTile | 256 | 1.38690 | 48.3878 |
-| SharedTile | 512 | 1.40759 | 47.6764 |
-| SharedTile | 1024 | 1.45693 | 46.0619 |
+| SharedTile | 32 | 2.56379 | 26.1757 |
+| SharedTile | 64 | 1.39178 | 48.2180 |
+| SharedTile | 128 | 1.38525 | 48.4454 |
+| SharedTile | 256 | 1.38780 | 48.3564 |
+| SharedTile | 512 | 1.40799 | 47.6629 |
+| SharedTile | 1024 | 1.45645 | 46.0772 |
 
 ### Observation
 
@@ -135,17 +143,35 @@ Test size: `32 MB`
 
 | Pattern | Parameter | Avg Time (ms) | Bandwidth (GB/s) |
 | --- | ---: | ---: | ---: |
-| SharedConf | 1 | 1.49623 | 44.8520 |
-| SharedConf | 2 | 1.54150 | 43.5348 |
-| SharedConf | 4 | 1.55292 | 43.2147 |
-| SharedConf | 8 | 1.66702 | 40.2568 |
-| SharedConf | 16 | 1.65706 | 40.4988 |
-| SharedConf | 32 | 1.65728 | 40.4933 |
+| SharedConf | 1 | 1.38085 | 48.5995 |
+| SharedConf | 2 | 1.39020 | 48.2727 |
+| SharedConf | 4 | 1.39041 | 48.2656 |
+| SharedConf | 8 | 1.41710 | 47.3564 |
+| SharedConf | 16 | 1.41983 | 47.2655 |
+| SharedConf | 32 | 1.41990 | 47.2631 |
 
 ### Observation
 
-The shared-conflict kernel is consistently slower than the plain shared-tile kernel.
-As the shared stride increases, bandwidth drops into the `40-45 GB/s` range, which is consistent with shared-memory bank conflicts adding overhead.
+The corrected shared-conflict kernel is now much closer to the plain shared-tile kernel because it no longer has shared-memory write aliasing between threads.
+There is still a measurable drop as the shared stride increases, but it is much smaller than before, which makes this a cleaner bank-conflict experiment.
+
+## Shared Memory No-Coalescing
+
+Test size: `32 MB`
+
+| Pattern | Parameter | Avg Time (ms) | Bandwidth (GB/s) |
+| --- | ---: | ---: | ---: |
+| SharedNoCol | 1 | 1.38787 | 48.3539 |
+| SharedNoCol | 2 | 1.38470 | 48.4644 |
+| SharedNoCol | 4 | 1.39780 | 48.0103 |
+| SharedNoCol | 8 | 1.49245 | 44.9656 |
+| SharedNoCol | 16 | 2.18313 | 30.7398 |
+| SharedNoCol | 32 | 4.47946 | 14.9815 |
+
+### Observation
+
+The shared no-coalescing kernel stays close to the tiled baseline for small strides, then degrades sharply as the shared stride increases.
+The drop to `30.74 GB/s` at stride `16` and `14.98 GB/s` at stride `32` suggests a much stronger penalty than the plain shared-conflict kernel.
 
 ## Observations
 
@@ -159,8 +185,10 @@ As the shared stride increases, bandwidth drops into the `40-45 GB/s` range, whi
 - Reverse access stays essentially equal to sequential access, which is what we expect when warps still touch adjacent memory locations in reverse order.
 - Most shared-memory tile results land in the `46-48.5 GB/s` range, which is below the direct sequential baseline.
 - The `32`-thread shared-memory case drops sharply to `26.38 GB/s`, which makes block size an important variable for the next phase.
-- Shared-memory conflict results are lower than plain shared-tile results across all tested strides.
-- The shared-conflict kernel drops from `44.85 GB/s` at stride `1` to about `40.5 GB/s` at strides `16` and `32`, which is a useful first sign of bank-conflict cost.
+- Shared-memory conflict results are now only slightly lower than plain shared-tile results across the tested strides.
+- The corrected shared-conflict kernel drops from `48.60 GB/s` at stride `1` to about `47.26 GB/s` at strides `16` and `32`, which is a milder but cleaner signal.
+- The shared no-coalescing kernel is mild at strides `1-4`, then drops hard at strides `8`, `16`, and `32`.
+- `SharedNoCol` falls much more sharply than `SharedConf`, which suggests the readback access pattern is now creating a stronger shared-memory bottleneck.
 
 ## Interpretation
 
@@ -178,35 +206,42 @@ What the numbers suggest:
 - the reverse benchmark is a nice confirmation that access direction alone is not enough to break coalescing
 - the shared-memory results give you a strong setup for Phase 3, because now you have a baseline showing that shared memory needs a reason to win
 - the shared-conflict results give you your first direct evidence that shared-memory access pattern matters, not just whether shared memory is used
+- the shared no-coalescing results make the shared-memory story even clearer: once the shared-memory access pattern gets bad enough, throughput can collapse dramatically
 
 For quick comparison against the sequential `32 MB` baseline:
 
 | Case | Parameter | Bandwidth (GB/s) | Relative to Sequential |
 | --- | ---: | ---: | ---: |
-| Sequential | 1 | 49.1898 | 100.0% |
-| Strided | 2 | 33.2248 | 67.5% |
-| Strided | 4 | 20.0925 | 40.8% |
-| Strided | 8 | 11.1171 | 22.6% |
-| Strided | 16 | 11.0949 | 22.6% |
-| Strided | 32 | 11.0481 | 22.5% |
-| Offset | 2 | 49.0469 | 99.7% |
-| Offset | 4 | 49.0201 | 99.7% |
-| Offset | 8 | 48.9773 | 99.6% |
-| Offset | 16 | 49.0774 | 99.8% |
-| Offset | 32 | 49.1448 | 99.9% |
-| Reverse | 1 | 49.1934 | 100.0% |
-| SharedTile | 32 | 26.3591 | 53.6% |
-| SharedTile | 64 | 48.2564 | 98.1% |
-| SharedTile | 128 | 48.4633 | 98.5% |
-| SharedTile | 256 | 48.3878 | 98.4% |
-| SharedTile | 512 | 47.6764 | 96.9% |
-| SharedTile | 1024 | 46.0619 | 93.6% |
-| SharedConf | 1 | 44.8520 | 91.2% |
-| SharedConf | 2 | 43.5348 | 88.5% |
-| SharedConf | 4 | 43.2147 | 87.9% |
-| SharedConf | 8 | 40.2568 | 81.8% |
-| SharedConf | 16 | 40.4988 | 82.3% |
-| SharedConf | 32 | 40.4933 | 82.3% |
+| Sequential | 1 | 49.2023 | 100.0% |
+| Strided | 2 | 33.2215 | 67.5% |
+| Strided | 4 | 20.0935 | 40.9% |
+| Strided | 8 | 11.1165 | 22.6% |
+| Strided | 16 | 11.0947 | 22.5% |
+| Strided | 32 | 11.0498 | 22.5% |
+| Offset | 2 | 49.0333 | 99.7% |
+| Offset | 4 | 49.0322 | 99.7% |
+| Offset | 8 | 48.9652 | 99.5% |
+| Offset | 16 | 49.0811 | 99.8% |
+| Offset | 32 | 49.1068 | 99.8% |
+| Reverse | 1 | 49.1816 | 100.0% |
+| SharedTile | 32 | 26.1757 | 53.2% |
+| SharedTile | 64 | 48.2180 | 98.0% |
+| SharedTile | 128 | 48.4454 | 98.5% |
+| SharedTile | 256 | 48.3564 | 98.3% |
+| SharedTile | 512 | 47.6629 | 96.9% |
+| SharedTile | 1024 | 46.0772 | 93.7% |
+| SharedConf | 1 | 48.5995 | 98.8% |
+| SharedConf | 2 | 48.2727 | 98.1% |
+| SharedConf | 4 | 48.2656 | 98.1% |
+| SharedConf | 8 | 47.3564 | 96.2% |
+| SharedConf | 16 | 47.2655 | 96.1% |
+| SharedConf | 32 | 47.2631 | 96.1% |
+| SharedNoCol | 1 | 48.3539 | 98.3% |
+| SharedNoCol | 2 | 48.4644 | 98.5% |
+| SharedNoCol | 4 | 48.0103 | 97.6% |
+| SharedNoCol | 8 | 44.9656 | 91.4% |
+| SharedNoCol | 16 | 30.7398 | 62.5% |
+| SharedNoCol | 32 | 14.9815 | 30.4% |
 
 The next steps are:
 
@@ -214,6 +249,7 @@ The next steps are:
 - profile the sequential and high-stride kernels with Nsight Compute
 - add bank-conflict and padding experiments to the shared-memory phase
 - compare `SharedTile` and `SharedConf` with Nsight Compute bank-conflict metrics
+- compare `SharedConf` and `SharedNoCol` to see which shared-memory access pattern is more destructive on this GPU
 
 ## Notes
 
@@ -224,3 +260,4 @@ The next steps are:
 - The offset benchmark also allocates a larger input buffer so that `input[idx + offset]` stays in bounds.
 - The shared-memory tiled kernel still performs one global read and one global write per element, but also adds shared-memory operations and a synchronization point.
 - The shared-conflict kernel uses a strided shared-memory index to intentionally stress bank behavior while keeping the global-memory access pattern unchanged.
+- The shared no-coalescing kernel keeps the global-memory load simple, but uses a strided shared-memory readback pattern that becomes increasingly expensive as the stride grows.
