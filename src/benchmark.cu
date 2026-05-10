@@ -74,12 +74,37 @@ __global__ void shared_tiled_copy_kernel(
         // Load data into shared memory tile
         shared[tid] = input[idx];
     }
-    __syncthreads();
+    __syncthreads(); // Ensure all threads have loaded their data into shared memory
 
     if (idx < num_elements)
     {
         // Write data from shared memory to output
         output[idx] = shared[tid];
+    }
+}
+
+__global__ void shared_conflict_copy_kernel(
+    const float *input,
+    float *output,
+    size_t num_elements,
+    size_t shared_stride)
+{
+    extern __shared__ float shared[];
+
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int tid = threadIdx.x;
+    int shared_index = (tid * shared_stride) % blockDim.x;
+
+    if (idx < num_elements)
+    {
+        shared[shared_index] = input[idx];
+    }
+
+    __syncthreads();
+
+    if (idx < num_elements)
+    {
+        output[idx] = shared[shared_index];
     }
 }
 
@@ -175,6 +200,27 @@ bool launch_benchmark_kernel(
         return true;
     }
 
+    if (pattern == 4){
+        size_t sharedMemBytes = blockSize * sizeof(float);
+        shared_tiled_copy_kernel<<<gridSize, blockSize, sharedMemBytes>>>(
+            dev_input,
+            dev_output,
+            num_elements
+        );
+        return true;
+    }
+
+    if (pattern == 5)
+    {
+        size_t sharedMemBytes = blockSize * sizeof(float);
+        shared_conflict_copy_kernel<<<gridSize, blockSize, sharedMemBytes>>>(
+            dev_input,
+            dev_output,
+            num_elements,
+            stride);
+        return true;
+    }
+
     return false;
 }
 
@@ -184,6 +230,8 @@ bool launch_benchmark_kernel(
 //   1 = strided copy
 //   2 = offset copy
 //   3 = reverse copy
+//   4 = shared tiled copy
+//   5 = shared conflict copy
 bool run_benchmark(
     const char *patternName,
     int pattern,
@@ -382,13 +430,25 @@ bool run_benchmark(
 
     double seconds = avgMilliseconds / 1000.0;
     double bandwidthGBps = bytesTransferred / seconds / 1e9;
+    size_t paramToPrint = stride;
+
+    if (pattern == 4 || pattern == 5)
+    {
+        paramToPrint = blockSize;
+    }
+
+    if (pattern == 5)
+    {
+        paramToPrint = stride;
+    }
 
     std::cout << patternName << "\t"
               << sizeMB << "\t\t"
-              << stride << "\t"
+              << paramToPrint << "\t"
               << avgMilliseconds << "\t\t"
               << bandwidthGBps << "\n";
 
+              
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
@@ -412,7 +472,7 @@ int main()
     std::cout << "Block size: " << blockSize << "\n";
     std::cout << "Iterations: " << iterations << "\n\n";
 
-    std::cout << "Pattern\t\tSize(MB)\tStride\tAvg Time(ms)\tBandwidth(GB/s)\n";
+    std::cout << "Pattern\t\tSize(MB)\tParam\tAvg Time(ms)\tBandwidth(GB/s)\n";
     std::cout << "-----------------------------------------------------------------------\n";
 
     // Phase 1: baseline sequential copy over several sizes
@@ -459,16 +519,46 @@ int main()
     }
     std::cout << "\n";
 
-    for (int stride : strides)
+   
+    run_benchmark(
+        "Reverse   ",
+        3,
+        testSizeMB,
+        blockSize,
+        iterations,
+        1
+    );
+
+    std::cout << "\n";
+ 
+    int sharedTileSizes[] = {32, 64, 128, 256 , 512 , 1024};
+    for (int blockSize : sharedTileSizes)
     {
         run_benchmark(
-            "Reverse   ",
-            3,
+            "SharedTile",
+            4,
             testSizeMB,
             blockSize,
             iterations,
-            stride);
+            1);
     }
+
+    std::cout << "\n";
+
+    int sharedConflictStrides[] = {1, 2, 4, 8, 16, 32};
+    for (int sharedStride : sharedConflictStrides)
+    {
+        run_benchmark(
+            "SharedConf",
+            5,
+            testSizeMB,
+            blockSize,
+            iterations,
+            sharedStride);
+    }
+
+    std::cout << "\nBenchmark completed.\n";
+
 
     return 0;
 }
