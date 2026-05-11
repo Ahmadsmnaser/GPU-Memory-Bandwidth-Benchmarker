@@ -1,21 +1,21 @@
-# GPU Memory Bandwidth Benchmarker
+# ⚡ GPU Memory Bandwidth Benchmarker
 
 A CUDA benchmark project that measures effective GPU memory bandwidth across multiple memory access patterns, then compares how access behavior affects throughput.
 
 The project focuses on:
 
-- CUDA kernel launch configuration
-- Global memory reads and writes
-- Coalesced vs non-coalesced global memory access
-- Shared memory usage
-- Shared memory stride behavior
-- CUDA event timing
-- Bandwidth calculation in GB/s
-- Performance interpretation from benchmark results
+- 🚀 CUDA kernel launch configuration
+- 🧠 Global memory reads and writes
+- 📏 Coalesced vs non-coalesced global memory access
+- 📦 Shared memory usage
+- 🧩 Shared memory stride behavior
+- ⏱️ CUDA event timing
+- 📊 Bandwidth calculation in GB/s
+- 🔍 Performance interpretation from benchmark results
 
 ---
 
-## Overview
+## 🔎 Overview
 
 This benchmark measures how fast a GPU can move data inside device memory using simple copy-style kernels.
 
@@ -40,7 +40,7 @@ The goal is not just to print numbers, but to explain what the numbers mean.
 
 ---
 
-## Why This Project Matters
+## 🎯 Why This Project Matters
 
 GPU performance depends heavily on memory access patterns.
 
@@ -48,15 +48,15 @@ Two kernels may perform the same number of operations, but if one accesses memor
 
 This project demonstrates that clearly:
 
-- Sequential access reaches about **49 GB/s**
-- Strided global-memory access drops sharply
-- Offset and reverse access stay close to sequential performance
-- Shared memory does not automatically improve performance
-- Bad shared-memory access patterns can significantly reduce throughput
+- ✅ Sequential access reaches about **49 GB/s**
+- 📉 Strided global-memory access drops sharply
+- 🔁 Offset and reverse access stay close to sequential performance
+- ⚠️ Shared memory does not automatically improve performance
+- 🧱 Bad shared-memory access patterns can significantly reduce throughput
 
 ---
 
-## Hardware
+## 🖥️ Hardware
 
 Current benchmark machine:
 
@@ -72,7 +72,7 @@ Current benchmark machine:
 
 ---
 
-## Current Features
+## ✨ Current Features
 
 Implemented kernels:
 
@@ -88,7 +88,7 @@ Implemented kernels:
 
 ---
 
-## Repository Structure
+## 📁 Repository Structure
 
 Suggested current structure:
 
@@ -128,7 +128,7 @@ CUDA_Project/
 
 ---
 
-## Build
+## 🛠️ Build
 
 From the `src/` directory:
 
@@ -152,9 +152,9 @@ nvcc benchmark.cu -o BM
 
 ---
 
-## Methodology
+## 🧪 Methodology
 
-### Timing
+### ⏱️ Timing
 
 The benchmark uses CUDA events:
 
@@ -180,7 +180,7 @@ The following are **not** included in the timed region:
 - setup work
 - cleanup work
 
-### Bandwidth Formula
+### 📐 Bandwidth Formula
 
 For a copy-style kernel:
 
@@ -207,9 +207,9 @@ GB/s = bytes_transferred / elapsed_seconds / 1e9
 
 ---
 
-## Kernels
+## ⚙️ Kernels
 
-### Sequential Copy
+### ✅ Sequential Copy
 
 ```cpp
 output[idx] = input[idx];
@@ -221,7 +221,7 @@ Expected behavior: high bandwidth.
 
 ---
 
-### Strided Global-Memory Copy
+### 📉 Strided Global-Memory Copy
 
 ```cpp
 output[idx] = input[idx * stride];
@@ -233,7 +233,7 @@ Expected behavior: bandwidth drops as stride increases.
 
 ---
 
-### Offset Global-Memory Copy
+### ➡️ Offset Global-Memory Copy
 
 ```cpp
 output[idx] = input[idx + offset];
@@ -245,7 +245,7 @@ Expected behavior: close to sequential bandwidth.
 
 ---
 
-### Reverse Copy
+### 🔄 Reverse Copy
 
 ```cpp
 output[idx] = input[num_elements - 1 - idx];
@@ -257,7 +257,7 @@ Expected behavior: close to sequential bandwidth.
 
 ---
 
-### Shared-Memory Tiled Copy
+### 📦 Shared-Memory Tiled Copy
 
 ```cpp
 shared[threadIdx.x] = input[idx];
@@ -271,7 +271,7 @@ Expected behavior: not necessarily faster than sequential copy because global-me
 
 ---
 
-### Shared-Memory Modulo Conflict Copy
+### 🧨 Shared-Memory Modulo Conflict Copy
 
 ```cpp
 int shared_index = (threadIdx.x * shared_stride) % blockDim.x;
@@ -287,7 +287,7 @@ Note: this kernel may cause multiple threads to access the same shared-memory lo
 
 ---
 
-### Shared-Memory Strided Copy Without Collisions
+### 🧩 Shared-Memory Strided Copy Without Collisions
 
 ```cpp
 int shared_index = threadIdx.x * shared_stride;
@@ -307,9 +307,9 @@ This avoids multiple threads writing to the same shared-memory location while st
 
 ---
 
-## Results Summary
+## 📊 Results Summary
 
-### Phase 1: Sequential Global-Memory Baseline
+### 🟢 Phase 1: Sequential Global-Memory Baseline
 
 | Size (MB) | Avg Time (ms) | Bandwidth (GB/s) |
 |---:|---:|---:|
@@ -329,7 +329,7 @@ Sequential baseline: 49.2994 GB/s
 
 ---
 
-### Phase 2: Global-Memory Access Pattern Study
+### 🔵 Phase 2: Global-Memory Access Pattern Study
 
 Test size: **32 MB**
 
@@ -362,11 +362,11 @@ The key lesson:
 
 ---
 
-### Phase 3: Shared-Memory Study
+### 🟣 Phase 3: Shared-Memory Study
 
 Test size: **32 MB**
 
-#### Shared-Memory Tiled Copy
+#### 📦 Shared-Memory Tiled Copy
 
 | Pattern | Block Size | Avg Time (ms) | Bandwidth (GB/s) |
 |---|---:|---:|---:|
@@ -383,7 +383,7 @@ The 32-thread block result is an outlier and should not be used as the represent
 
 ---
 
-#### Shared-Memory Modulo Conflict Copy
+#### 🧨 Shared-Memory Modulo Conflict Copy
 
 | Pattern | Shared Stride | Avg Time (ms) | Bandwidth (GB/s) |
 |---|---:|---:|---:|
@@ -398,7 +398,7 @@ The modulo-based SharedConf kernel is consistently slower than SharedTile, but i
 
 ---
 
-#### Shared-Memory Strided Copy Without Collisions
+#### 🧩 Shared-Memory Strided Copy Without Collisions
 
 | Pattern | Shared Stride | Avg Time (ms) | Bandwidth (GB/s) |
 |---|---:|---:|---:|
@@ -422,7 +422,7 @@ This suggests a strong shared-memory bottleneck caused by the strided shared-mem
 
 ---
 
-## Relative Performance vs Sequential 32 MB Baseline
+## 📈 Relative Performance vs Sequential 32 MB Baseline
 
 Baseline:
 
@@ -465,34 +465,34 @@ Sequential 32 MB = 49.1791 GB/s
 
 ---
 
-## Key Takeaways
+## 🧠 Key Takeaways
 
-1. Sequential global-memory copy reaches a stable bandwidth of about **49 GB/s**.
-2. Strided global-memory access heavily reduces effective bandwidth.
-3. Offset access does not significantly reduce bandwidth.
-4. Reverse access performs close to sequential access.
-5. Shared memory does not automatically improve performance.
-6. SharedTile is slightly slower than sequential copy because it adds synchronization and shared-memory traffic.
-7. The modulo-based shared-conflict kernel is useful as a stress test, but it is not the cleanest bank-conflict measurement.
-8. The no-collision shared-memory stride benchmark shows the clearest shared-memory degradation.
-9. SharedNoCol stride 32 reaches only about **30.5%** of the sequential 32 MB baseline.
-10. Access pattern matters more than the raw number of operations.
-
----
-
-## Current Limitations
-
-- Output correctness is not yet validated on the host side.
-- Nsight Compute has not yet been used to verify hardware-level metrics.
-- Theoretical peak bandwidth has not yet been verified for this exact MX250 memory variant.
-- The benchmark currently uses a single GPU.
-- The code is still in a single CUDA source file.
-- Command-line arguments are not implemented yet.
-- CSV export is not implemented yet.
+1. ✅ Sequential global-memory copy reaches a stable bandwidth of about **49 GB/s**.
+2. 📉 Strided global-memory access heavily reduces effective bandwidth.
+3. ➡️ Offset access does not significantly reduce bandwidth.
+4. 🔄 Reverse access performs close to sequential access.
+5. ⚠️ Shared memory does not automatically improve performance.
+6. 📦 SharedTile is slightly slower than sequential copy because it adds synchronization and shared-memory traffic.
+7. 🧨 The modulo-based shared-conflict kernel is useful as a stress test, but it is not the cleanest bank-conflict measurement.
+8. 🧩 The no-collision shared-memory stride benchmark shows the clearest shared-memory degradation.
+9. 📉 SharedNoCol stride 32 reaches only about **30.5%** of the sequential 32 MB baseline.
+10. 🎯 Access pattern matters more than the raw number of operations.
 
 ---
 
-## Nsight Compute Validation Plan
+## ⚠️ Current Limitations
+
+- 🧪 Output correctness is not yet validated on the host side.
+- 🔬 Nsight Compute has not yet been used to verify hardware-level metrics.
+- 📌 Theoretical peak bandwidth has not yet been verified for this exact MX250 memory variant.
+- 🖥️ The benchmark currently uses a single GPU.
+- 🗂️ The code is still in a single CUDA source file.
+- ⌨️ Command-line arguments are not implemented yet.
+- 📄 CSV export is not implemented yet.
+
+---
+
+## 🔬 Nsight Compute Validation Plan
 
 Future profiling should compare selected kernels:
 
@@ -521,30 +521,30 @@ sm__warps_active.avg.pct_of_peak_sustained_active
 
 ---
 
-## Next Steps
+## 🚧 Next Steps
 
-- Verify the exact MX250 memory variant and theoretical peak bandwidth.
-- Compare measured sequential bandwidth against theoretical peak.
-- Add output correctness validation.
-- Add command-line arguments:
+- 📌 Verify the exact MX250 memory variant and theoretical peak bandwidth.
+- 📊 Compare measured sequential bandwidth against theoretical peak.
+- ✅ Add output correctness validation.
+- ⌨️ Add command-line arguments:
   - `--size-mb`
   - `--iterations`
   - `--pattern`
   - `--stride`
   - `--block-size`
-- Add CSV export.
-- Add a Python plotting script.
-- Split the code into:
+- 📄 Add CSV export.
+- 📈 Add a Python plotting script.
+- 🗂️ Split the code into:
   - `main.cu`
   - `benchmark.cu`
   - `kernels.cu`
   - headers
-- Add Nsight Compute notes in `results/nsight_notes.md`.
-- Add a padding experiment for shared-memory stride patterns.
+- 🔬 Add Nsight Compute notes in `results/nsight_notes.md`.
+- 🧩 Add a padding experiment for shared-memory stride patterns.
 
 ---
 
-## Status
+## ✅ Status
 
 Current project status:
 
